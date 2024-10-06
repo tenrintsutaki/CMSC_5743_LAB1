@@ -29,9 +29,12 @@ void im2col(const float* input, int height, int width, int channels,
                     {
                         int h_in = h * stride + kh;
                         int w_in = w * stride + kw;
-
-                        output_index = (c * kernel_size * kernel_size) + (kh * kernel_size + kw) + (h * out_width + w) * output_col_size;
                         input_index = c * channel_size + h_in * width + w_in;
+
+                        int current_channel_start = (c * kernel_size * kernel_size);
+                        int row_start = (h * out_width + w) * output_col_size;
+                        int kernel_start = (kh * kernel_size + kw);
+                        output_index = current_channel_start + row_start + kernel_start;
 
                         if (h_in < height && w_in < width)
                         {
@@ -107,14 +110,14 @@ void test(){
 
     std::vector<float> im2col_data;
 
-    // im2col(input.data(), height, width, channels, kernel_size, stride, padding, im2col_data);
+     im2col(input.data(), height, width, channels, kernel_size, stride, padding, im2col_data);
 
     std::vector<float> output;
 
-    // convolution(im2col_data, kernel, out_channels, kernel_size,
-    //             (height + 2 * padding - kernel_size) / stride + 1,
-    //             (width + 2 * padding - kernel_size) / stride + 1,
-    //             output);
+     convolution(im2col_data, kernel, out_channels, kernel_size,
+                 (height + 2 * padding - kernel_size) / stride + 1,
+                 (width + 2 * padding - kernel_size) / stride + 1,
+                 output);
 
     // Output results for verification
     if (output ==  ground_truth){
