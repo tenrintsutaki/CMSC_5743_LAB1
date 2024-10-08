@@ -11,7 +11,7 @@ double get_time() {
   return tv.tv_sec + 1e-6 * tv.tv_usec;
 }
 
-constexpr int n = 256;
+constexpr int n = 1024;
 int A[n][n];
 int B[n][n];
 int BT[n][n];
@@ -54,20 +54,14 @@ void matmul() {
   }
 }
 
-void matmul_tiling(int size) {
+void matmul_unrolling() {
     memset(C, 0, sizeof(C));
-    for (int i = 0; i < n; i += size) {
-        for (int j = 0; j < n; j += size) {
-            for (int k = 0; k < n; k += size) {
-                int maxM = std::min(i + size, n);
-                int maxN = std::min(j + size, n);
-                int maxP = std::min(k + size, n);
-                for (int m = i; m < maxM; ++m){
-                    for (int n = j; n < maxN; ++n){
-                        for (int p = k; p < maxP; ++p){
-                            C[m][p] += A[m][n] * B[n][p];
-                        }
-                    }
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            for (int k = 0; k < n; k+=2) {
+                C[i][j] += A[i][k] * B[k][j];
+                if (k + 1 < n){
+                    C[i][j] += A[i][k+1] * B[k+1][j];
                 }
             }
         }
@@ -85,20 +79,14 @@ void matmul_ikj() {
   }
 }
 
-void matmul_ikj_tiling(int size) {
+void matmul_ikj_unrolling() {
     memset(C, 0, sizeof(C));
-    for (int i = 0; i < n; i += size) {
-        for (int k = 0; k < n; k += size) {
-            for (int j = 0; j < n; j += size) {
-                int maxM = std::min(i + size, n);
-                int maxN = std::min(j + size, n);
-                int maxP = std::min(k + size, n);
-                for (int m = i; m < maxM; ++m){
-                    for (int p = k; p < maxP; ++p){
-                        for (int n = j; n < maxN; ++n){
-                            C[m][n] += A[m][p] * B[p][n];
-                        }
-                    }
+    for (int i = 0; i < n; i++) {
+        for (int k = 0; k < n; k+=2) {
+            for (int j = 0; j < n; j++) {
+                C[i][j] += A[i][k] * B[k][j];
+                if (k + 1 < n){
+                    C[i][j] += A[i][k + 1] * B[k + 1][j];
                 }
             }
         }
@@ -121,25 +109,19 @@ void matmul_AT() {
   }
 }
 
-void matmul_AT_tiling(int size) {
+void matmul_AT_unrolling() {
     memset(C, 0, sizeof(C));
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
             AT[i][j] = A[j][i];
         }
     }
-    for (int i = 0; i < n; i += size) {
-        for (int j = 0; j < n; j += size) {
-            for (int k = 0; k < n; k += size) {
-                int maxM = std::min(i + size, n);
-                int maxN = std::min(j + size, n);
-                int maxP = std::min(k + size, n);
-                for (int m = i; m < maxM; ++m){
-                    for (int n = j; n < maxN; ++n){
-                        for (int p = k; p < maxP; ++p){
-                            C[m][n] += AT[p][m] * B[p][n];
-                        }
-                    }
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j+=2) {
+            for (int k = 0; k < n; k++) {
+                C[i][j] += AT[k][i] * B[k][j];
+                if (j + 1 < n){
+                    C[i][j + 1] += AT[k][i] * B[k][j + 1];
                 }
             }
         }
@@ -162,32 +144,26 @@ void matmul_BT() {
     }
 }
 
-void matmul_BT_tiling(int size) {
+void matmul_BT_unrolling() {
   memset(C, 0, sizeof(C));
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
       BT[i][j] = B[j][i];
     }
   }
-    for (int i = 0; i < n; i += size) {
-        for (int j = 0; j < n; j += size) {
-            for (int k = 0; k < n; k += size) {
-                int maxM = std::min(i + size, n);
-                int maxN = std::min(j + size, n);
-                int maxP = std::min(k + size, n);
-                for (int m = i; m < maxM; ++m){
-                    for (int n = j; n < maxN; ++n){
-                        for (int p = k; p < maxP; ++p){
-                            C[m][n] += A[m][p] * BT[n][p];
-                        }
-                    }
-                }
-            }
-        }
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j+=2) {
+      for (int k = 0; k < n; k++) {
+          C[i][j] += A[i][k] * BT[j][k];
+          if (j + 1 < n){
+              C[i][j+1] += A[i][k] * BT[j+1][k];
+          }
+      }   
     }
+  }
 }
 
-void experiment_ijk(int size){
+void experiment_ijk(){
     float avg_time = 0.0f;
     for (int K = 0; K < 32; K++) {
         auto t = get_time();
@@ -200,14 +176,14 @@ void experiment_ijk(int size){
     avg_time = 0.0f;
     for (int K = 0; K < 32; K++) {
         auto t = get_time();
-        matmul_ikj_tiling(size);
+        matmul_ikj_unrolling();
         test();
         avg_time += get_time() - t;
     }
-    printf("Avg Time for matmul_IJK tiling Calculation: %f\n", avg_time / 32);
+    printf("Avg Time for matmul_IJK Unrolling Calculation: %f\n", avg_time / 32);
 }
 
-void experiment_matmul(int size){
+void experiment_matmul(){
     float avg_time = 0.0f;
     for (int K = 0; K < 32; K++) {
         auto t = get_time();
@@ -220,14 +196,14 @@ void experiment_matmul(int size){
     avg_time = 0.0f;
     for (int K = 0; K < 32; K++) {
         auto t = get_time();
-        matmul_tiling(size);
+        matmul_unrolling();
         test();
         avg_time += get_time() - t;
     }
-    printf("Avg Time for matmul tiling Calculation: %f\n", avg_time / 32);
+    printf("Avg Time for matmul Unrolling Calculation: %f\n", avg_time / 32);
 }
 
-void experiment_AT(int size){
+void experiment_AT(){
     float avg_time = 0.0f;
     for (int K = 0; K < 32; K++) {
         auto t = get_time();
@@ -240,14 +216,14 @@ void experiment_AT(int size){
     avg_time = 0.0f;
     for (int K = 0; K < 32; K++) {
         auto t = get_time();
-        matmul_AT_tiling(size);
+        matmul_AT_unrolling();
         test();
         avg_time += get_time() - t;
     }
-    printf("Avg Time for AT tiling Calculation: %f\n", avg_time / 32);
+    printf("Avg Time for AT Unrolling Calculation: %f\n", avg_time / 32);
 }
 
-void experiment_BT(int size){
+void experiment_BT(){
     float avg_time = 0.0f;
     for (int K = 0; K < 32; K++) {
         auto t = get_time();
@@ -260,19 +236,19 @@ void experiment_BT(int size){
     avg_time = 0.0f;
     for (int K = 0; K < 32; K++) {
         auto t = get_time();
-        matmul_BT_tiling(size);
+        matmul_BT_unrolling();
         test();
         avg_time += get_time() - t;
     }
-    printf("Avg Time for BT tiling Calculation: %f\n", avg_time / 32);
+    printf("Avg Time for BT Unrolling Calculation: %f\n", avg_time / 32);
 }
 
 int main() {
-  init();
-    experiment_matmul(32);
-    experiment_ijk(32);
-    experiment_AT(32);
-    experiment_BT(32);
+    init();
+    experiment_matmul();
+    experiment_ijk();
+    experiment_AT();
+    experiment_BT();
   return 0;
 }
 

@@ -27,8 +27,8 @@ void im2col(const float* input, int height, int width, int channels,
                 {
                     for (int kw = 0; kw < kernel_size; ++kw)
                     {
-                        int h_in = h * stride + kh;
-                        int w_in = w * stride + kw;
+                        int h_in = h * stride + kh; // h index traced from original 2D Feature Map
+                        int w_in = w * stride + kw; // w index traced from original 2D Feature Map
                         input_index = c * channel_size + h_in * width + w_in;
 
                         int current_channel_start = (c * kernel_size * kernel_size);
