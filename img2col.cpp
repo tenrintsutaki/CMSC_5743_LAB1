@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
-#include <cstdlib> // For rand()
-#include <ctime>   // For time
+#include <cstdlib>
+#include <ctime>
 
 void im2col(const float* input, int height, int width, int channels,
             int kernel_size, int stride, int padding,
@@ -129,13 +129,13 @@ void test(){
 
 int main()
 {
-    const int height = 7;
-    const int width = 7;
-    const int channels = 1;
+    const int height = 56;
+    const int width = 56;
+    const int channels = 3;
+    const int out_channels = 64;
     const int kernel_size = 3;
     const int stride = 1;
     const int padding = 0;
-    const int out_channels = 1;
 
     // Seed random number generator
     std::srand(static_cast<unsigned int>(std::time(0)));
