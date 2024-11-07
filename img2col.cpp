@@ -134,55 +134,55 @@ void test(){
     }
 }
 
-int main()
-{
-    const int height = 56;
-    const int width = 56;
-    const int channels = 3;
-    const int out_channels = 64;
-    const int kernel_size = 3;
-    const int batch_size = 1;
-    const int stride = 1;
-    const int padding = 0;
-
-    // Seed random number generator
-    std::srand(static_cast<unsigned int>(std::time(0)));
-
-    // Initialize input with random values
-    std::vector<float> input(batch_size * channels * height * width);
-    for (auto& val : input)
-    {
-        val = static_cast<float>(std::rand()) / RAND_MAX; // Random float between 0 and 1
-    }
-
-    // Initialize kernels with random values
-    std::vector<float> kernels(out_channels * channels * kernel_size * kernel_size);
-    for (auto& val : kernels)
-    {
-        val = static_cast<float>(std::rand()) / RAND_MAX; // Random float between 0 and 1
-    }
-
-    std::vector<float> im2col_data;
-    im2col(input.data(), batch_size, height, width, channels, kernel_size, stride, padding, im2col_data);
-
-    // Perform convolution
-    std::vector<float> output;
-    std::cout << "im2col convert output size:" << im2col_data.size() << std::endl;
-    convolution(im2col_data, batch_size, kernels, out_channels, kernel_size,
-                (height + 2 * padding - kernel_size) / stride + 1,
-                (width + 2 * padding - kernel_size) / stride + 1,
-                output);
-
-    // Output results for verification
-    std::cout << "conv output size: " << output.size() << std::endl;
-    std::cout << "First few values in output:" << std::endl;
-    for (int i = 0; i < 10; ++i)
-    {
-        std::cout << output[i] << " ";
-    }
-    std::cout << std::endl;
-
-    test();
-
-    return 0;
-}
+// int main()
+// {
+//     const int height = 56;
+//     const int width = 56;
+//     const int channels = 3;
+//     const int out_channels = 64;
+//     const int kernel_size = 3;
+//     const int batch_size = 1;
+//     const int stride = 1;
+//     const int padding = 0;
+//
+//     // Seed random number generator
+//     std::srand(static_cast<unsigned int>(std::time(0)));
+//
+//     // Initialize input with random values
+//     std::vector<float> input(batch_size * channels * height * width);
+//     for (auto& val : input)
+//     {
+//         val = static_cast<float>(std::rand()) / RAND_MAX; // Random float between 0 and 1
+//     }
+//
+//     // Initialize kernels with random values
+//     std::vector<float> kernels(out_channels * channels * kernel_size * kernel_size);
+//     for (auto& val : kernels)
+//     {
+//         val = static_cast<float>(std::rand()) / RAND_MAX; // Random float between 0 and 1
+//     }
+//
+//     std::vector<float> im2col_data;
+//     im2col(input.data(), batch_size, height, width, channels, kernel_size, stride, padding, im2col_data);
+//
+//     // Perform convolution
+//     std::vector<float> output;
+//     std::cout << "im2col convert output size:" << im2col_data.size() << std::endl;
+//     convolution(im2col_data, batch_size, kernels, out_channels, kernel_size,
+//                 (height + 2 * padding - kernel_size) / stride + 1,
+//                 (width + 2 * padding - kernel_size) / stride + 1,
+//                 output);
+//
+//     // Output results for verification
+//     std::cout << "conv output size: " << output.size() << std::endl;
+//     std::cout << "First few values in output:" << std::endl;
+//     for (int i = 0; i < 10; ++i)
+//     {
+//         std::cout << output[i] << " ";
+//     }
+//     std::cout << std::endl;
+//
+//     test();
+//
+//     return 0;
+// }
