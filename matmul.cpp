@@ -106,7 +106,7 @@ int main() {
 //     matmul();
 //    matmul_AT();
      matmul_BT();
-    test();
+      test();
 //    printf("%f\n", get_time() - t);
     avg_time += get_time() - t;
   }
