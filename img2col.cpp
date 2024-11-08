@@ -2,10 +2,13 @@
 #include <vector>
 #include <cstdlib>
 #include <ctime>
+#include <stdlib.h>
+#include <vector>
+using namespace std;
 
 void im2col(const float* input, int batch_size, int height, int width, int channels,
             int kernel_size, int stride, int padding,
-            std::vector<float>& output)
+            vector<float>& output)
 {
     int out_height = (height + 2 * padding - kernel_size) / stride + 1; // out h
     int out_width = (width + 2 * padding - kernel_size) / stride + 1; // out w
@@ -55,11 +58,11 @@ void im2col(const float* input, int batch_size, int height, int width, int chann
     }
 }
 
-void convolution(const std::vector<float>& im2col_data, int batch_size,
-                 const std::vector<float>& kernels,
+void convolution(const vector<float>& im2col_data, int batch_size,
+                 const vector<float>& kernels,
                  int out_channels, int kernel_size,
                  int out_height, int out_width,
-                 std::vector<float>& output){
+                 vector<float>& output){
 
     output.resize(batch_size * out_channels * out_height * out_width, 0.0f);
     for (int b = 0; b < batch_size; ++b)
@@ -86,56 +89,55 @@ void convolution(const std::vector<float>& im2col_data, int batch_size,
     }
 }
 
-void test(){
-    const int height = 7;
-    const int width = 7;
-    const int channels = 1;
-    const int kernel_size = 3;
-    const int batch_size = 1;
-    const int stride = 1;
-    const int padding = 0;
-    const int out_channels = 1;
+void convolution_winograd(const vector<float>& im2col_data, int batch_size,
+                          const vector<float>& kernels,
+                          int out_channels, int kernel_size,
+                          int out_height, int out_width,
+                          vector<float>& output) {
 
-    std::vector<float> input =
-            {0,0,0,0,0,0,0,
-            0,2,2,1,1,2,0,
-            0,2,0,1,1,0,0,
-            0,2,0,1,2,0,0,
-            0,1,1,1,1,1,0,
-            0,0,0,1,0,2,0,
-            0,0,0,0,0,0,0};
+    output.resize(batch_size * out_channels * out_height * out_width, 0.0f);
 
-    std::vector<float> kernel =
-            {1,0,0,1,1,1,1,0,-1};
+    // Winograd transformation for 2x2 blocks
+    for (int b = 0; b < batch_size; ++b) {
+        for (int c = 0; c < out_channels; ++c) {
+            for (int h = 0; h < out_height; h += 2) {
+                for (int w = 0; w < out_width; w += 2) {
+                    for (int k = 0; k < kernel_size * kernel_size; k += kernel_size) {
 
-    std::vector<float> ground_truth =
-            {4,6,3,5,4,
-            2,6,2,4,4,
-            1,5,3,4,4,
-            2,4,3,3,4,
-            0,2,2,4,3};
+                    // Load data blocks
+                    float D00 = im2col_data[b * out_height * out_width * 4 + (h * out_width + w) * 4];
+                    float D10 = im2col_data[b * out_height * out_width * 4 + ((h + 1) * out_width + w) * 4];
+                    float D20 = im2col_data[b * out_height * out_width * 4 + (h * out_width + (w + 1)) * 4];
+                    float D30 = im2col_data[b * out_height * out_width * 4 + ((h + 1) * out_width + (w + 1)) * 4];
 
-    std::vector<float> im2col_data;
+                    // Load kernel vectors
+                    float k0 = kernels[c * kernel_size * kernel_size + k];
+                    float k1 = kernels[c * kernel_size * kernel_size + k + 1];
+                    float k2 = kernels[c * kernel_size * kernel_size + k + 2];
 
-     im2col(input.data(),batch_size, height, width, channels, kernel_size, stride, padding, im2col_data);
+                    // Winograd transformation
+                    float M0 = (D00 - D20) * k0;
+                    float M1 = (D10 + D20) * (k0 + k1 + k2) / 2.0f;
+                    float M2 = (D20 - D10) * (k0 - k1 + k2) / 2.0f;
+                    float M3 = (D10 - D30) * k2;
 
-    std::vector<float> output;
+                    // Calculate result
+                    float r0 = M0 + M1 + M2;
+                    float r1 = M1 - M2 - M3;
 
-     convolution(im2col_data, batch_size,kernel, out_channels, kernel_size,
-                 (height + 2 * padding - kernel_size) / stride + 1,
-                 (width + 2 * padding - kernel_size) / stride + 1,
-                 output);
-
-    // Output results for verification
-    if (output ==  ground_truth){
-        std::cout << "Correct" << std::endl;
-    }else{
-        std::cout << "Wrong" << std::endl;
+                    // Store result
+                    output[b * out_channels * out_height * out_width + c * out_height * out_width + h * out_width + w] += r0;
+                    output[b * out_channels * out_height * out_width + c * out_height * out_width + (h + 1) * out_width + w] += r1;
+                    }
+                }
+            }
+        }
     }
 }
 
 int main()
 {
+    //Input parameters
     const int height = 56;
     const int width = 56;
     const int channels = 3;
@@ -145,44 +147,51 @@ int main()
     const int stride = 1;
     const int padding = 0;
 
-    // Seed random number generator
-    std::srand(static_cast<unsigned int>(std::time(0)));
-
-    // Initialize input with random values
-    std::vector<float> input(batch_size * channels * height * width);
+    srand(time(0));     // Seed random number generator
+    vector<float> input(batch_size * channels * height * width);     // Initialize input with random values
     for (auto& val : input)
     {
-        val = static_cast<float>(std::rand()) / RAND_MAX; // Random float between 0 and 1
+        val = rand();
     }
 
-    // Initialize kernels with random values
-    std::vector<float> kernels(out_channels * channels * kernel_size * kernel_size);
+    vector<float> kernels(out_channels * channels * kernel_size * kernel_size); // Initialize kernels with random values
     for (auto& val : kernels)
     {
-        val = static_cast<float>(std::rand()) / RAND_MAX; // Random float between 0 and 1
+        val = rand();
     }
+    vector<float> im2col_data;
+    im2col(input.data(), batch_size, height, width, channels, kernel_size, stride, padding, im2col_data); // Perform im2col
 
-    std::vector<float> im2col_data;
-    im2col(input.data(), batch_size, height, width, channels, kernel_size, stride, padding, im2col_data);
-
-    // Perform convolution
-    std::vector<float> output;
-    std::cout << "im2col convert output size:" << im2col_data.size() << std::endl;
+    vector<float> output_normal;
+    cout << "im2col convert output size:" << im2col_data.size() << endl;
     convolution(im2col_data, batch_size, kernels, out_channels, kernel_size,
                 (height + 2 * padding - kernel_size) / stride + 1,
                 (width + 2 * padding - kernel_size) / stride + 1,
-                output);
+                output_normal);     // Perform convolution
 
-    // Output results for verification
-    std::cout << "conv output size: " << output.size() << std::endl;
-    std::cout << "First few values in output:" << std::endl;
-    for (int i = 0; i < 10; ++i)
-    {
-        std::cout << output[i] << " ";
+    cout << "Normal Conv Output size: " << output_normal.size() << endl;
+    cout << "Process Finished !" << endl;
+
+    vector<float> output_winograd;
+    convolution_winograd(im2col_data, batch_size, kernels, out_channels, kernel_size,
+                         (height + 2 * padding - kernel_size) / stride + 1,
+                         (width + 2 * padding - kernel_size) / stride + 1,
+                         output_winograd);
+
+    cout << "Winograd Conv Output size: " << output_winograd.size() << endl;
+    cout << "Process Finished !" << endl;
+
+    if (output_normal == output_winograd){
+        cout << "Answer Correct" << endl;
+    }else{
+        cout << "Answer Wrong" << endl;
     }
-    std::cout << std::endl;
 
-    test();
+    int i = 0;
+    while (i < 50){
+        cout << output_normal[i] << "Normal" << endl;
+        cout << output_winograd[i] << "Wino" << endl;
+        i ++;
+    }
 
-    return 0;
 }
