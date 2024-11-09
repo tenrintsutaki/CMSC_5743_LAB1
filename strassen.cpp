@@ -10,11 +10,11 @@ constexpr int matrix_size = 1024;
 Matrix matrix_A(matrix_size, vector<int>(matrix_size));
 Matrix matrix_B(matrix_size, vector<int>(matrix_size));
 
-double get_time() {
-    struct timeval tv;
-    gettimeofday(&tv, nullptr);
-    return tv.tv_sec + 1e-6 * tv.tv_usec;
-}
+// double get_time() {
+//     struct timeval tv;
+//     gettimeofday(&tv, nullptr);
+//     return tv.tv_sec + 1e-6 * tv.tv_usec;
+// }
 
 
 Matrix generateRandomMatrix(int size) {
@@ -111,15 +111,15 @@ void printMatrix(const Matrix& mat) {
     }
 }
 
-int main()
-{
-    init(matrix_size);
-    float avg_time = 0.0f;
-    for (int K = 0; K < 5; K++) {
-        auto t = get_time();
-        StrassenAlgorithm(matrix_A, matrix_B);
-        avg_time += get_time() - t;
-    }
-    printf("Avg Time for Calculation: %f for n size %d \n", avg_time / 5, matrix_size);
-    return 0;
-}
+// int main()
+// {
+//     init(matrix_size);
+//     float avg_time = 0.0f;
+//     for (int K = 0; K < 5; K++) {
+//         auto t = get_time();
+//         StrassenAlgorithm(matrix_A, matrix_B);
+//         avg_time += get_time() - t;
+//     }
+//     printf("Avg Time for Calculation: %f for n size %d \n", avg_time / 5, matrix_size);
+//     return 0;
+// }
