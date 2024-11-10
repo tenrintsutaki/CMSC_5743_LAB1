@@ -4,7 +4,6 @@
 #include <ctime>
 #include <stdlib.h>
 #include <sys/time.h>
-#include <vector>
 using namespace std;
 
 double get_time() {
@@ -109,21 +108,21 @@ void convolution_winograd(const vector<float>& im2col_data, int batch_size,
                 for (int w = 0; w < out_width; w += 2) {
                     for (int k = 0; k < kernel_size * kernel_size; k += kernel_size) {
 
-                    float D00 = im2col_data[b * out_height * out_width * 4 + (h * out_width + w) * 4];
+                    float D00 = im2col_data[b * out_height * out_width * 4 + (h * out_width + w) * 4]; // Compute D00 to D30
                     float D10 = im2col_data[b * out_height * out_width * 4 + ((h + 1) * out_width + w) * 4];
                     float D20 = im2col_data[b * out_height * out_width * 4 + (h * out_width + (w + 1)) * 4];
                     float D30 = im2col_data[b * out_height * out_width * 4 + ((h + 1) * out_width + (w + 1)) * 4];
 
-                    float k0 = kernels[c * kernel_size * kernel_size + k];
+                    float k0 = kernels[c * kernel_size * kernel_size + k]; // Compute K0 to K2
                     float k1 = kernels[c * kernel_size * kernel_size + k + 1];
                     float k2 = kernels[c * kernel_size * kernel_size + k + 2];
 
-                    float M0 = (D00 - D20) * k0;
+                    float M0 = (D00 - D20) * k0; // Compute M0 to M3
                     float M1 = (D10 + D20) * (k0 + k1 + k2) / 2.0f;
                     float M2 = (D20 - D10) * (k0 - k1 + k2) / 2.0f;
                     float M3 = (D10 - D30) * k2;
 
-                    float r0 = M0 + M1 + M2;
+                    float r0 = M0 + M1 + M2; // Compute r0 and r1 as the result. followed by formula
                     float r1 = M1 - M2 - M3;
 
                     output[b * out_channels * out_height * out_width + c * out_height * out_width + h * out_width + w] += r0;
@@ -175,8 +174,6 @@ int main()
         sum_normal += get_time() - t;
     }
 
-
-
     cout << "Normal Conv Output size: " << output_normal.size() << endl;
     cout << "Process Finished !" << endl;
 
@@ -189,13 +186,13 @@ int main()
         convolution_winograd(im2col_data, batch_size, kernels, out_channels, kernel_size,
                              (height + 2 * padding - kernel_size) / stride + 1,
                              (width + 2 * padding - kernel_size) / stride + 1,
-                             output_winograd);
+                             output_winograd); // Perform Winograd
         sum_winograd += get_time() - t;
     }
     cout << "Winograd Conv Output size: " << output_winograd.size() << endl;
     cout << "Process Finished !" << endl;
 
-    cout << sum_normal / k << endl;
-    cout << sum_winograd / k << endl;
+    cout  << "Normal Conv Running: " << sum_normal / k << endl; // Output Running time
+    cout  << "Winograd Running: " << sum_winograd / k << endl; // Output Running time
 
 }
