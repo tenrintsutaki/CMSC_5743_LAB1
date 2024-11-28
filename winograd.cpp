@@ -134,65 +134,65 @@ void convolution_winograd(const vector<float>& im2col_data, int batch_size,
     }
 }
 
-int main()
-{
-    int height = 56;
-    int width = 56;
-    int channels = 3;
-    int out_channels = 64;
-    int kernel_size = 3;
-    int batch_size = 1;
-    int stride = 1;
-    int padding = 0;
-    int k = 200;
-
-    srand(time(0));     // Seed random number generator
-    vector<float> input(batch_size * channels * height * width);     // Initialize input with random values
-    for (auto& val : input)
-    {
-        val = rand();
-    }
-
-    vector<float> kernels(out_channels * channels * kernel_size * kernel_size); // Initialize kernels with random values
-    for (auto& val : kernels)
-    {
-        val = rand();
-    }
-    vector<float> im2col_data;
-    im2col(input.data(), batch_size, height, width, channels, kernel_size, stride, padding, im2col_data); // Perform im2col
-
-    vector<float> output_normal;
-    double sum_normal = 0.0;
-    cout << "im2col convert output size:" << im2col_data.size() << endl;
-    for (int i = 0; i < k; ++i)
-    {
-        auto t = get_time();
-        convolution(im2col_data, batch_size, kernels, out_channels, kernel_size,
-                (height + 2 * padding - kernel_size) / stride + 1,
-                (width + 2 * padding - kernel_size) / stride + 1,
-                output_normal);     // Perform convolution
-        sum_normal += get_time() - t;
-    }
-
-    cout << "Normal Conv Output size: " << output_normal.size() << endl;
-    cout << "Process Finished !" << endl;
-
-    vector<float> output_winograd;
-    double sum_winograd = 0.0;
-    cout << "im2col convert output size:" << im2col_data.size() << endl;
-    for (int i = 0; i < k; ++i)
-    {
-        auto t = get_time();
-        convolution_winograd(im2col_data, batch_size, kernels, out_channels, kernel_size,
-                             (height + 2 * padding - kernel_size) / stride + 1,
-                             (width + 2 * padding - kernel_size) / stride + 1,
-                             output_winograd); // Perform Winograd
-        sum_winograd += get_time() - t;
-    }
-    cout << "Winograd Conv Output size: " << output_winograd.size() << endl;
-    cout << "Process Finished !" << endl;
-
-    cout  << "Normal Conv Running: " << sum_normal / k << endl; // Output Running time
-    cout  << "Winograd Running: " << sum_winograd / k << endl; // Output Running time
-
-}
+// int main()
+// {
+//     int height = 56;
+//     int width = 56;
+//     int channels = 3;
+//     int out_channels = 64;
+//     int kernel_size = 3;
+//     int batch_size = 1;
+//     int stride = 1;
+//     int padding = 0;
+//     int k = 200;
+//
+//     srand(time(0));     // Seed random number generator
+//     vector<float> input(batch_size * channels * height * width);     // Initialize input with random values
+//     for (auto& val : input)
+//     {
+//         val = rand();
+//     }
+//
+//     vector<float> kernels(out_channels * channels * kernel_size * kernel_size); // Initialize kernels with random values
+//     for (auto& val : kernels)
+//     {
+//         val = rand();
+//     }
+//     vector<float> im2col_data;
+//     im2col(input.data(), batch_size, height, width, channels, kernel_size, stride, padding, im2col_data); // Perform im2col
+//
+//     vector<float> output_normal;
+//     double sum_normal = 0.0;
+//     cout << "im2col convert output size:" << im2col_data.size() << endl;
+//     for (int i = 0; i < k; ++i)
+//     {
+//         auto t = get_time();
+//         convolution(im2col_data, batch_size, kernels, out_channels, kernel_size,
+//                 (height + 2 * padding - kernel_size) / stride + 1,
+//                 (width + 2 * padding - kernel_size) / stride + 1,
+//                 output_normal);     // Perform convolution
+//         sum_normal += get_time() - t;
+//     }
+//
+//     cout << "Normal Conv Output size: " << output_normal.size() << endl;
+//     cout << "Process Finished !" << endl;
+//
+//     vector<float> output_winograd;
+//     double sum_winograd = 0.0;
+//     cout << "im2col convert output size:" << im2col_data.size() << endl;
+//     for (int i = 0; i < k; ++i)
+//     {
+//         auto t = get_time();
+//         convolution_winograd(im2col_data, batch_size, kernels, out_channels, kernel_size,
+//                              (height + 2 * padding - kernel_size) / stride + 1,
+//                              (width + 2 * padding - kernel_size) / stride + 1,
+//                              output_winograd); // Perform Winograd
+//         sum_winograd += get_time() - t;
+//     }
+//     cout << "Winograd Conv Output size: " << output_winograd.size() << endl;
+//     cout << "Process Finished !" << endl;
+//
+//     cout  << "Normal Conv Running: " << sum_normal / k << endl; // Output Running time
+//     cout  << "Winograd Running: " << sum_winograd / k << endl; // Output Running time
+//
+// }
